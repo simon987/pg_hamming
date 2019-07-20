@@ -3,7 +3,7 @@
 Hamming distance for fixed-length `bytea` datatype.
 
 
-### Compiling from source (Cmake)
+### Compiling from source (CMake)
 
 ```bash
 cmake .
