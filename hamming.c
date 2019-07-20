@@ -3,18 +3,13 @@
 
 PG_MODULE_MAGIC;
 
-int const HASH_SIZE = 12;
-int const HASH_BITS = HASH_SIZE * HASH_SIZE;
-int const BYTEA_LEN = HASH_BITS / 8;
-
 PG_FUNCTION_INFO_V1(hash_is_within_distance);
 
 /**
  * Check if the hamming distance of the two raw byte arrays
  * is within the specified distance
  *
- * It is assumed that: the two arrays are exactly
- *  BYTEA_LEN bytes long
+ * It is assumed that: the two arrays are exactly 18 bytes long
  *
  * Import with
     CREATE OR REPLACE FUNCTION hash_is_within_distance(bytea, bytea, integer) RETURNS boolean
@@ -25,24 +20,29 @@ PG_FUNCTION_INFO_V1(hash_is_within_distance);
  */
 Datum hash_is_within_distance(PG_FUNCTION_ARGS) {
 
-    bytea *hash1 = PG_GETARG_BYTEA_P(0);
-    bytea *hash2 = PG_GETARG_BYTEA_P(1);
+    char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
+    char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
     int32 max_distance = PG_GETARG_INT32(2);
 
     int distance = 0;
 
-    char *h1 = hash1->vl_len_;
-    char *h2 = hash2->vl_len_;
-
-    for (int i = BYTEA_LEN; i >= 0; i--) {
-        distance += __builtin_popcount(h1[i] ^ h2[i]);
-
-        if (distance > max_distance) {
-            PG_RETURN_BOOL(false);
-        }
+    distance += __builtin_popcountll(
+            *((uint64 *) h1) ^ *((uint64 *) h2)
+    );
+    if (distance > max_distance) {
+        PG_RETURN_BOOL(false);
     }
+    distance += __builtin_popcountll(
+            *((uint64 *) h1 + 1) ^ *((uint64 *) h2 + 1)
+    );
+    if (distance > max_distance) {
+        PG_RETURN_BOOL(false);
+    }
+    distance += __builtin_popcount(
+            *((uint16 *) h1 + 8) ^ *((uint16 *) h2 + 8)
+    );
 
-    PG_RETURN_BOOL(true);
+    PG_RETURN_BOOL(distance <= max_distance);
 }
 
 PG_FUNCTION_INFO_V1(hash_distance);
@@ -50,8 +50,7 @@ PG_FUNCTION_INFO_V1(hash_distance);
 /**
  * Hamming distance of two raw byte arrays
  *
- * It is assumed that: the two arrays are exactly
- *  BYTEA_LEN bytes long
+ * It is assumed that: the two arrays are exactly 18 bytes long
  *
  * Import with
     CREATE OR REPLACE FUNCTION hash_distance(bytea, bytea) RETURNS integer
@@ -62,17 +61,20 @@ PG_FUNCTION_INFO_V1(hash_distance);
  */
 Datum hash_distance(PG_FUNCTION_ARGS) {
 
-    bytea *hash1 = PG_GETARG_BYTEA_P(0);
-    bytea *hash2 = PG_GETARG_BYTEA_P(1);
+    char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
+    char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
 
     int distance = 0;
 
-    char *h1 = hash1->vl_len_;
-    char *h2 = hash2->vl_len_;
-
-    for (int i = BYTEA_LEN; i >= 0; i--) {
-        distance += __builtin_popcount(h1[i] ^ h2[i]);
-    }
+    distance += __builtin_popcountll(
+            *((uint64 *) h1) ^ *((uint64 *) h2)
+    );
+    distance += __builtin_popcountll(
+            *((uint64 *) h1 + 1) ^ *((uint64 *) h2 + 1)
+    );
+    distance += __builtin_popcount(
+            *((uint16 *) h1 + 8) ^ *((uint16 *) h2 + 8)
+            );
 
     PG_RETURN_INT32(distance);
 }
