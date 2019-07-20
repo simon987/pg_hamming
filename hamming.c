@@ -78,3 +78,57 @@ Datum hash_distance(PG_FUNCTION_ARGS) {
 
     PG_RETURN_INT32(distance);
 }
+
+
+PG_FUNCTION_INFO_V1(hash_is_within_distance_any);
+
+/**
+ * Check if the first argument matches any (within distance 'max_distance')
+    hashes among an array of hashes
+ *
+ * It is assumed that: the first array is exactly 18 bytes long, the
+    second array is a multiple of 18 bytes
+ *
+ * Import with
+    CREATE OR REPLACE FUNCTION hash_is_within_distance_any(bytea, bytea, integer) RETURNS bool
+     AS '/path/to/libhamming.so', 'hash_is_within_distance_any'
+     LANGUAGE C STRICT;'
+ *
+ * @return the hamming distance between the two arrays
+ */
+Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
+
+    char *h = VARDATA(PG_GETARG_BYTEA_P(0));
+    bytea *h_bytea = PG_GETARG_BYTEA_P(1);
+    char *h_arr = VARDATA(h_bytea);
+    int32 max_distance = PG_GETARG_INT32(2);
+
+    int distance;
+
+    for (int i = VARSIZE(h_bytea) - 18; i >= 0; i -= 18) {
+        h_arr += 18;
+        distance = 0;
+
+        distance += __builtin_popcountll(
+                *((uint64 *) h) ^ *((uint64 *) h_arr)
+        );
+        if (distance > max_distance) {
+            continue;
+        }
+        distance += __builtin_popcountll(
+                *((uint64 *) h + 1) ^ *((uint64 *) h_arr + 1)
+        );
+        if (distance > max_distance) {
+            continue;
+        }
+        distance += __builtin_popcount(
+                *((uint16 *) h + 8) ^ *((uint16 *) h_arr + 8)
+        );
+
+        if (distance <= max_distance) {
+            PG_RETURN_BOOL(true);
+        }
+    }
+
+    PG_RETURN_BOOL(false);
+}
