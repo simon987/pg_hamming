@@ -74,7 +74,7 @@ Datum hash_distance(PG_FUNCTION_ARGS) {
     );
     distance += __builtin_popcount(
             *((uint16 *) h1 + 8) ^ *((uint16 *) h2 + 8)
-            );
+    );
 
     PG_RETURN_INT32(distance);
 }
@@ -87,14 +87,14 @@ PG_FUNCTION_INFO_V1(hash_is_within_distance_any);
     hashes among an array of hashes
  *
  * It is assumed that: the first array is exactly 18 bytes long, the
-    second array is a multiple of 18 bytes
+    second array length is a multiple of 18 bytes
  *
  * Import with
     CREATE OR REPLACE FUNCTION hash_is_within_distance_any(bytea, bytea, integer) RETURNS bool
      AS '/path/to/libhamming.so', 'hash_is_within_distance_any'
      LANGUAGE C STRICT;'
  *
- * @return the hamming distance between the two arrays
+ * @return true if at least 1 hash matches
  */
 Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
 
@@ -128,6 +128,41 @@ Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
         if (distance <= max_distance) {
             PG_RETURN_BOOL(true);
         }
+    }
+
+    PG_RETURN_BOOL(false);
+}
+
+PG_FUNCTION_INFO_V1(hash_equ_any);
+
+/**
+ * Check if the first argument exactly matches any hashes among an array of hashes
+ *
+ * It is assumed that: the first array is exactly 18 bytes long, the
+    second array length is a multiple of 18 bytes
+ *
+ * Import with
+ * CREATE OR REPLACE FUNCTION hash_equ_any(bytea, bytea) RETURNS bool
+     AS '/path/to/libhamming.so', 'hash_equ_any'
+     LANGUAGE C STRICT;
+ * @return true if at least 1 hash is equal
+ */
+Datum hash_equ_any(PG_FUNCTION_ARGS) {
+
+    char *h = VARDATA(PG_GETARG_BYTEA_P(0));
+    bytea *h_bytea = PG_GETARG_BYTEA_P(1);
+    char *h_arr = VARDATA(h_bytea);
+
+    for (int i = VARSIZE(h_bytea); i >= 0; i -= 18) {
+
+        // This is a bit faster than __builtin_memcmp
+        if (*((uint64 *) h) == *((uint64 *) h_arr) &&
+            *((uint64 *) h + 1) == *((uint64 *) h_arr + 1) &&
+            *((uint16 *) h + 8) == *((uint16 *) h_arr + 8)) {
+            PG_RETURN_BOOL(true);
+        }
+
+        h_arr += 18;
     }
 
     PG_RETURN_BOOL(false);
