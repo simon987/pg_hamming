@@ -14,7 +14,7 @@ PG_FUNCTION_INFO_V1(hash_is_within_distance);
  * Import with
     CREATE OR REPLACE FUNCTION hash_is_within_distance(bytea, bytea, integer) RETURNS boolean
      AS '/path/to/libhamming.so', 'hash_is_within_distance'
-     LANGUAGE C STRICT;'
+     LANGUAGE C STRICT;
  *
  * @return the hamming distance between the two arrays
  */
@@ -55,7 +55,7 @@ PG_FUNCTION_INFO_V1(hash_distance);
  * Import with
     CREATE OR REPLACE FUNCTION hash_distance(bytea, bytea) RETURNS integer
      AS '/path/to/libhamming.so', 'hash_distance'
-     LANGUAGE C STRICT;'
+     LANGUAGE C STRICT;
  *
  * @return the hamming distance between the two arrays
  */
@@ -92,7 +92,7 @@ PG_FUNCTION_INFO_V1(hash_is_within_distance_any);
  * Import with
     CREATE OR REPLACE FUNCTION hash_is_within_distance_any(bytea, bytea, integer) RETURNS bool
      AS '/path/to/libhamming.so', 'hash_is_within_distance_any'
-     LANGUAGE C STRICT;'
+     LANGUAGE C STRICT;
  *
  * @return true if at least 1 hash matches
  */
@@ -105,20 +105,20 @@ Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
 
     int distance;
 
-    for (int i = VARSIZE(h_bytea) - 18; i >= 0; i -= 18) {
-        h_arr += 18;
-        distance = 0;
+    for (int i = (VARSIZE(h_bytea) - VARHDRSZ) / 18 - 1; i >= 0; i--) {
 
-        distance += __builtin_popcountll(
+        distance = __builtin_popcountll(
                 *((uint64 *) h) ^ *((uint64 *) h_arr)
         );
         if (distance > max_distance) {
+            h_arr += 18;
             continue;
         }
         distance += __builtin_popcountll(
                 *((uint64 *) h + 1) ^ *((uint64 *) h_arr + 1)
         );
         if (distance > max_distance) {
+            h_arr += 18;
             continue;
         }
         distance += __builtin_popcount(
@@ -128,6 +128,7 @@ Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
         if (distance <= max_distance) {
             PG_RETURN_BOOL(true);
         }
+        h_arr += 18;
     }
 
     PG_RETURN_BOOL(false);
@@ -153,7 +154,7 @@ Datum hash_equ_any(PG_FUNCTION_ARGS) {
     bytea *h_bytea = PG_GETARG_BYTEA_P(1);
     char *h_arr = VARDATA(h_bytea);
 
-    for (int i = VARSIZE(h_bytea); i >= 0; i -= 18) {
+    for (int i = (VARSIZE(h_bytea) - VARHDRSZ) / 18 - 1; i >= 0; i--) {
 
         // This is a bit faster than __builtin_memcmp
         if (*((uint64 *) h) == *((uint64 *) h_arr) &&
