@@ -3,7 +3,7 @@
 
 PG_MODULE_MAGIC;
 
-PG_FUNCTION_INFO_V1(hash_is_within_distance);
+PG_FUNCTION_INFO_V1(hash_is_within_distance18);
 
 /**
  * Check if the hamming distance of the two raw byte arrays
@@ -18,7 +18,7 @@ PG_FUNCTION_INFO_V1(hash_is_within_distance);
  *
  * @return the hamming distance between the two arrays
  */
-Datum hash_is_within_distance(PG_FUNCTION_ARGS) {
+Datum hash_is_within_distance18(PG_FUNCTION_ARGS) {
 
     char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
     char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
@@ -45,7 +45,30 @@ Datum hash_is_within_distance(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(distance <= max_distance);
 }
 
-PG_FUNCTION_INFO_V1(hash_distance);
+PG_FUNCTION_INFO_V1(hash_is_within_distance8);
+
+Datum hash_is_within_distance8(PG_FUNCTION_ARGS) {
+    char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
+    char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
+    int32 max_distance = PG_GETARG_INT32(2);
+
+    if (__builtin_popcountll(*((uint64 *) h1) ^ *((uint64 *) h2)) > max_distance) {
+        PG_RETURN_BOOL(false);
+    }
+    PG_RETURN_BOOL(true);
+}
+
+PG_FUNCTION_INFO_V1(hash_distance8);
+
+Datum hash_distance8(PG_FUNCTION_ARGS) {
+    char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
+    char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
+
+    int distance = __builtin_popcountll(*((uint64 *) h1) ^ *((uint64 *) h2));
+    PG_RETURN_INT32(distance);
+}
+
+PG_FUNCTION_INFO_V1(hash_distance18);
 
 /**
  * Hamming distance of two raw byte arrays
@@ -59,7 +82,7 @@ PG_FUNCTION_INFO_V1(hash_distance);
  *
  * @return the hamming distance between the two arrays
  */
-Datum hash_distance(PG_FUNCTION_ARGS) {
+Datum hash_distance18(PG_FUNCTION_ARGS) {
 
     char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
     char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
@@ -80,7 +103,7 @@ Datum hash_distance(PG_FUNCTION_ARGS) {
 }
 
 
-PG_FUNCTION_INFO_V1(hash_is_within_distance_any);
+PG_FUNCTION_INFO_V1(hash_is_within_distance18_any);
 
 /**
  * Check if the first argument matches any (within distance 'max_distance')
@@ -96,7 +119,7 @@ PG_FUNCTION_INFO_V1(hash_is_within_distance_any);
  *
  * @return true if at least 1 hash matches
  */
-Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
+Datum hash_is_within_distance18_any(PG_FUNCTION_ARGS) {
 
     char *h = VARDATA(PG_GETARG_BYTEA_P(0));
     bytea *h_bytea = PG_GETARG_BYTEA_P(1);
@@ -134,7 +157,7 @@ Datum hash_is_within_distance_any(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(false);
 }
 
-PG_FUNCTION_INFO_V1(hash_equ_any);
+PG_FUNCTION_INFO_V1(hash_equ18_any);
 
 /**
  * Check if the first argument exactly matches any hashes among an array of hashes
@@ -148,7 +171,7 @@ PG_FUNCTION_INFO_V1(hash_equ_any);
      LANGUAGE C STRICT;
  * @return true if at least 1 hash is equal
  */
-Datum hash_equ_any(PG_FUNCTION_ARGS) {
+Datum hash_equ18_any(PG_FUNCTION_ARGS) {
 
     char *h = VARDATA(PG_GETARG_BYTEA_P(0));
     bytea *h_bytea = PG_GETARG_BYTEA_P(1);

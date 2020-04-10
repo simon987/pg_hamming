@@ -6,5 +6,5 @@ set(CMAKE_C_STANDARD 99)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
-find_package("PostgreSQL REQUIRED")
+find_package(PostgreSQL REQUIRED)
 add_library(hamming SHARED hamming.c)
