@@ -1,6 +1,6 @@
 # PostgreSQL hamming distance
 
-Hamming distance for fixed-length `bytea` datatype.
+Hamming distance for fixed-length `bytea` datatype (8-byte, 32-byte and 128-byte).
 
 
 ### Compiling from source (CMake)
@@ -10,7 +10,8 @@ cmake .
 make
 ```
 
-The functions in this library are very domain-specific and can realistically
-only be used within the scope of [irarchives](https://github.com/simon987/irarchives).
+Will break catastrophically if function arguments are not exactly the correct length.
 
 See [hamming.c](hamming.c) for more information
+
+

@@ -4,7 +4,11 @@ project(hamming C)
 
 set(CMAKE_C_STANDARD 99)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-
 find_package(PostgreSQL REQUIRED)
 add_library(hamming SHARED hamming.c)
+target_compile_options(
+        hamming
+        PRIVATE
+        -Ofast
+        -march=native
+)
