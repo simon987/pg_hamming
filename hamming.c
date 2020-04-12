@@ -58,6 +58,35 @@ Datum hash_is_within_distance8(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(true);
 }
 
+PG_FUNCTION_INFO_V1(hash_is_within_distance32);
+
+Datum hash_is_within_distance32(PG_FUNCTION_ARGS) {
+    char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
+    char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
+    int32 max_distance = PG_GETARG_INT32(2);
+
+    int distance = 0;
+
+    distance += __builtin_popcountll(*((uint64 *) h1) ^ *((uint64 *) h2));
+    if (distance > max_distance) {
+        PG_RETURN_BOOL(false);
+    }
+    distance += __builtin_popcountll(*((uint64 *) h1 + 1) ^ *((uint64 *) h2 + 1));
+    if (distance > max_distance) {
+        PG_RETURN_BOOL(false);
+    }
+    distance += __builtin_popcountll(*((uint64 *) h1 + 2) ^ *((uint64 *) h2 + 2));
+    if (distance > max_distance) {
+        PG_RETURN_BOOL(false);
+    }
+    distance += __builtin_popcountll(*((uint64 *) h1 + 3) ^ *((uint64 *) h2 + 3));
+    if (distance > max_distance) {
+        PG_RETURN_BOOL(false);
+    }
+
+    PG_RETURN_BOOL(distance <= max_distance);
+}
+
 PG_FUNCTION_INFO_V1(hash_distance8);
 
 Datum hash_distance8(PG_FUNCTION_ARGS) {
@@ -65,6 +94,21 @@ Datum hash_distance8(PG_FUNCTION_ARGS) {
     char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
 
     int distance = __builtin_popcountll(*((uint64 *) h1) ^ *((uint64 *) h2));
+    PG_RETURN_INT32(distance);
+}
+
+PG_FUNCTION_INFO_V1(hash_distance32);
+
+Datum hash_distance32(PG_FUNCTION_ARGS) {
+    char *h1 = VARDATA(PG_GETARG_BYTEA_P(0));
+    char *h2 = VARDATA(PG_GETARG_BYTEA_P(1));
+
+    int distance = 0;
+    distance += __builtin_popcountll(*((uint64 *) h1) ^ *((uint64 *) h2));
+    distance += __builtin_popcountll(*((uint64 *) h1 + 1) ^ *((uint64 *) h2 + 1));
+    distance += __builtin_popcountll(*((uint64 *) h1 + 2) ^ *((uint64 *) h2 + 2));
+    distance += __builtin_popcountll(*((uint64 *) h1 + 3) ^ *((uint64 *) h2 + 3));
+
     PG_RETURN_INT32(distance);
 }
 
@@ -89,15 +133,9 @@ Datum hash_distance18(PG_FUNCTION_ARGS) {
 
     int distance = 0;
 
-    distance += __builtin_popcountll(
-            *((uint64 *) h1) ^ *((uint64 *) h2)
-    );
-    distance += __builtin_popcountll(
-            *((uint64 *) h1 + 1) ^ *((uint64 *) h2 + 1)
-    );
-    distance += __builtin_popcount(
-            *((uint16 *) h1 + 8) ^ *((uint16 *) h2 + 8)
-    );
+    distance += __builtin_popcountll(*((uint64 *) h1) ^ *((uint64 *) h2));
+    distance += __builtin_popcountll(*((uint64 *) h1 + 1) ^ *((uint64 *) h2 + 1));
+    distance += __builtin_popcount(*((uint16 *) h1 + 8) ^ *((uint16 *) h2 + 8));
 
     PG_RETURN_INT32(distance);
 }
