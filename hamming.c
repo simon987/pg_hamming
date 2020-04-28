@@ -1,5 +1,5 @@
-#include "postgresql/server/postgres.h"
-#include "postgresql/server/fmgr.h"
+#include <postgres.h>
+#include <fmgr.h>
 
 __always_inline
 static int _distance_8(const char *h1, const char *h2) {
